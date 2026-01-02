@@ -2,124 +2,127 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VibeMate</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 
     <style>
-        /* --- THEME & DYNAMIC BACKGROUND --- */
+        /* --- THEME & RESET --- */
         :root { 
             --primary: #8b5cf6;
-            --glass: rgba(20, 25, 40, 0.75);
+            --glass: rgba(20, 25, 40, 0.85); /* Slightly darker for better contrast */
             --glow-happy: #fbbf24;
             --glow-sad: #3b82f6;
             --glow-angry: #ef4444;
             --glow-neutral: #a855f7;
         }
 
+        * { box-sizing: border-box; }
+
         body { 
-            margin: 0; font-family: 'Outfit', sans-serif; overflow: hidden; height: 100vh; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            /* Living Plasma Background */
+            margin: 0; font-family: 'Outfit', sans-serif; 
+            overflow: hidden; 
+            height: 100dvh; /* dynamic viewport height for mobile browsers */
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             background: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
             background-size: 400% 400%;
             animation: plasmaShift 15s ease infinite;
             color: white;
+            padding-top: 20px;
         }
 
-        /* Background swirling effect */
-        body::before {
-            content: ''; position: absolute; inset: 0; opacity: 0.4;
-            background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.4) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.4) 0%, transparent 40%);
-            animation: swirl 20s linear infinite; z-index: -1;
-        }
-
+        /* Animation Keyframes */
         @keyframes plasmaShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        @keyframes swirl { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.1); } 100% { transform: rotate(360deg) scale(1); } }
+        @keyframes pulseFast { 0%, 100% { box-shadow: 0 0 40px currentColor; scale: 1; } 50% { box-shadow: 0 0 70px currentColor; scale: 1.02; } }
+        @keyframes breatheDeep { 0%, 100% { box-shadow: 0 0 30px currentColor; scale: 1; } 50% { box-shadow: 0 0 60px currentColor; scale: 1.01; } }
+        @keyframes shakeGlow { 0%, 100% { box-shadow: 0 0 50px currentColor; transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
 
-        /* --- THE CORE (BIGGER EMOTION AURA) --- */
+        /* --- AVATAR / CORE --- */
         #core-wrapper { 
-            position: relative; width: 280px; height: 280px; margin-bottom: 25px;
+            position: relative; 
+            width: 260px; height: 260px; 
+            flex-shrink: 0; /* Don't squash the face */
             border-radius: 50%;
-            /* Default Base Glow */
             box-shadow: 0 0 60px var(--glow-neutral), inset 0 0 20px var(--glow-neutral);
             transition: all 0.5s ease;
+            margin-bottom: 20px;
         }
 
-        /* Emotion-specific states for the wrapper */
+        /* Responsive Avatar Size */
+        @media (max-height: 700px) {
+            #core-wrapper { width: 180px; height: 180px; margin-bottom: 10px; }
+        }
+
         #core-wrapper.emo-happy { animation: pulseFast 1.5s infinite; color: var(--glow-happy); }
         #core-wrapper.emo-sad   { animation: breatheDeep 4s infinite; color: var(--glow-sad); }
         #core-wrapper.emo-angry { animation: shakeGlow 0.5s infinite; color: var(--glow-angry); }
-        /* When speaking, enhance the current emotion glow */
-        #core-wrapper.speaking { animation-duration: 0.5s !important; filter: brightness(1.3); }
-
-        @keyframes pulseFast { 0%, 100% { box-shadow: 0 0 60px currentColor; scale: 1; } 50% { box-shadow: 0 0 100px currentColor; scale: 1.02; } }
-        @keyframes breatheDeep { 0%, 100% { box-shadow: 0 0 50px currentColor; scale: 1; } 50% { box-shadow: 0 0 80px currentColor; scale: 1.01; } }
-        @keyframes shakeGlow { 0%, 100% { box-shadow: 0 0 70px currentColor; transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+        #core-wrapper.speaking { filter: brightness(1.3); }
 
         #avatar-circle {
             position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; 
-            border: 5px solid rgba(255,255,255,0.8); background: #000; z-index: 2;
+            border: 4px solid rgba(255,255,255,0.8); background: #000; z-index: 2;
             display: flex; justify-content: center; align-items: center;
         }
         #video-preview, #face-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         #face-canvas { z-index: 3; }
 
-        /* --- UI CARD & MASK SELECTOR --- */
+        /* --- UI CARD --- */
         #ui-card {
-            width: 90%; max-width: 480px; height: 60vh;
-            background: var(--glass); backdrop-filter: blur(25px); border-radius: 24px;
+            width: 90%; max-width: 500px; 
+            flex: 1; /* Fill remaining height */
+            margin-bottom: 20px;
+            background: var(--glass); backdrop-filter: blur(20px); border-radius: 24px;
             border: 1px solid rgba(255, 255, 255, 0.15);
             display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* NEW: Scrollable Mask Bar */
         #mask-bar {
-            display: flex; gap: 10px; padding: 15px; overflow-x: auto;
-            background: rgba(0,0,0,0.2); scrollbar-width: none;
+            display: flex; gap: 10px; padding: 10px 15px; overflow-x: auto;
+            background: rgba(0,0,0,0.2); scrollbar-width: none; flex-shrink: 0;
         }
         .mask-item {
-            font-size: 28px; width: 50px; height: 50px; border-radius: 12px;
+            font-size: 24px; width: 45px; height: 45px; border-radius: 12px;
             background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: 0.2s; border: 2px solid transparent; flex-shrink: 0;
         }
-        .mask-item:hover { background: rgba(255,255,255,0.2); }
-        .mask-item.active { border-color: var(--primary); background: rgba(139, 92, 246, 0.2); transform: scale(1.1); }
+        .mask-item.active { border-color: var(--primary); background: rgba(139, 92, 246, 0.2); transform: scale(1.05); }
 
-        #chat-log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scrollbar-width: none; scroll-behavior: smooth; }
-        .msg { max-width: 80%; padding: 14px 18px; border-radius: 18px; font-size: 16px; line-height: 1.5; animation: popIn 0.3s ease; }
-        .ai { align-self: flex-start; background: rgba(139, 92, 246, 0.2); color: #ddd6fe; border: 1px solid rgba(139, 92, 246, 0.3); }
-        .user { align-self: flex-end; background: rgba(59, 130, 246, 0.2); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.3); }
-        #controls { padding: 15px; background: rgba(0,0,0,0.3); display: flex; gap: 10px; align-items: center; }
-        #text-input { flex: 1; padding: 14px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-family: inherit; font-size: 16px; }
-        .icon-btn { width: 50px; height: 50px; border-radius: 50%; background: var(--primary); border: none; color: white; cursor: pointer; font-size: 22px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .icon-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
+        #chat-log { 
+            flex: 1; overflow-y: auto; padding: 15px; 
+            display: flex; flex-direction: column; gap: 12px; 
+            scrollbar-width: none; scroll-behavior: smooth; 
+        }
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 15px; line-height: 1.4; animation: popIn 0.3s ease; word-wrap: break-word;}
+        .ai { align-self: flex-start; background: rgba(139, 92, 246, 0.25); color: #ddd6fe; border-top-left-radius: 4px; }
+        .user { align-self: flex-end; background: rgba(59, 130, 246, 0.25); color: #bfdbfe; border-top-right-radius: 4px; }
+        
+        #controls { padding: 15px; background: rgba(0,0,0,0.3); display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+        #text-input { flex: 1; padding: 12px 16px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: white; outline: none; font-size: 16px; }
+        .icon-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); border: none; color: white; cursor: pointer; font-size: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .listening { background: #ef4444 !important; animation: pulseRed 1s infinite; }
 
         @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } }
 
-        #overlay { position: absolute; inset: 0; background: #000; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #loading-status { margin-top: 20px; color: var(--primary); font-weight: bold; }
-        #start-btn { margin-top: 30px; padding: 18px 50px; font-size: 20px; background: white; color: black; border: none; border-radius: 40px; cursor: pointer; font-weight: bold; box-shadow: 0 0 30px rgba(255,255,255,0.3); transition: 0.3s; display: none; }
-        #start-btn:hover { transform: scale(1.05); box-shadow: 0 0 60px rgba(255,255,255,0.6); }
-        #reset-mem-btn { position: absolute; top: 10px; right: 10px; opacity: 0.5; font-size: 12px; background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 10px; cursor: pointer; z-index: 60;}
+        /* OVERLAYS */
+        #overlay { position: absolute; inset: 0; background: #000; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;}
+        #start-btn { margin-top: 30px; padding: 15px 40px; font-size: 18px; background: white; color: black; border: none; border-radius: 40px; cursor: pointer; font-weight: bold; display: none; }
+        #reset-mem-btn { position: absolute; top: 10px; right: 10px; opacity: 0.6; font-size: 11px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 20px; cursor: pointer; z-index: 60;}
     </style>
 </head>
 <body>
 
     <div id="overlay">
-        <h1 style="font-size: 3.5rem; margin-bottom: 0; background: linear-gradient(to right, #fff, #8b5cf6); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">VibeMate</h1>
-        <p style="color: #ccc; font-size: 1.2rem;">Visual Experience Update</p>
-        <div id="loading-status">Initialize...</div>
-        <button id="start-btn">Enter Vibe Digital</button>
+        <h1 style="font-size: 3rem; margin: 0; background: linear-gradient(to right, #fff, #8b5cf6); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">VibeMate</h1>
+        <p style="color: #aaa; margin-top: 10px;">Emotional AI Interface</p>
+        <div id="loading-status" style="margin-top:20px; color:#8b5cf6; font-weight:bold;">Initializing Neural Net...</div>
+        <button id="start-btn">Enter Interface</button>
     </div>
 
-    <button id="reset-mem-btn" onclick="clearMemory()">🧠 Clear Memory</button>
+    <button id="reset-mem-btn" onclick="clearMemory()">Clear Memory</button>
 
     <div id="core-wrapper">
         <div id="avatar-circle">
@@ -132,36 +135,33 @@
         <div id="mask-bar"></div>
         <div id="chat-log"></div>
         <div id="controls">
-            <input type="text" id="text-input" placeholder="Chat with me..." autocomplete="off">
-            <button id="mic-btn" class="icon-btn" title="Speak">🎙️</button>
+            <input type="text" id="text-input" placeholder="Type a message..." autocomplete="off">
+            <button id="mic-btn" class="icon-btn">🎙️</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script>
         // --- ⚙️ CONFIGURATION ---
-        const API_KEY = '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';
+        // NOTE: No API Key here! We call our own backend now.
         const MODEL_NAME = 'llama-3.3-70b-versatile'; 
         const USER_LANGUAGE = 'en-US'; 
 
-        // --- 🧠 STATE & MASKS ---
+        // --- 🧠 STATE ---
         let memory = JSON.parse(localStorage.getItem('vibemate_memory')) || [];
         let currentEmotion = "neutral";
-        // Expanded Mask List for the UI Bar
         const masks = [
             { type: 'none', emoji: '🚫', scale: 1 },
             { type: 'monkey', emoji: '🐵', scale: 2.5 },
             { type: 'dog', emoji: '🐶', scale: 2.5 },
             { type: 'cat', emoji: '🐱', scale: 2.4 },
-            { type: 'frog', emoji: '🐸', scale: 2.3 },
+            { type: 'cool', emoji: '😎', scale: 2.2 },
             { type: 'alien', emoji: '👽', scale: 2.2 },
-            { type: 'robot', emoji: '🤖', scale: 2.4 },
-            { type: 'clown', emoji: '🤡', scale: 2.4 },
-            { type: 'cool', emoji: '😎', scale: 2.2 }
+            { type: 'robot', emoji: '🤖', scale: 2.4 }
         ];
         let maskIndex = 0;
         
-        // DOM
+        // DOM Elements
         const chatLog = document.getElementById('chat-log');
         const video = document.getElementById('video-preview');
         const canvas = document.getElementById('face-canvas');
@@ -170,15 +170,15 @@
         const loadingStatus = document.getElementById('loading-status');
         const startBtn = document.getElementById('start-btn');
 
-        // --- 1. UI: MASK SELECTOR ---
+        // --- 1. UI SETUP ---
         function setupMaskUI() {
+            maskBar.innerHTML = '';
             masks.forEach((mask, index) => {
                 const el = document.createElement('div');
-                el.className = `mask-item ${index === 0 ? 'active' : ''}`;
+                el.className = `mask-item ${index === maskIndex ? 'active' : ''}`;
                 el.innerText = mask.emoji;
                 el.onclick = () => {
                     maskIndex = index;
-                    // Update active state visually
                     document.querySelectorAll('.mask-item').forEach(i => i.classList.remove('active'));
                     el.classList.add('active');
                 };
@@ -186,7 +186,7 @@
             });
         }
 
-        // --- 2. THE BRAIN (AI LOGIC) ---
+        // --- 2. THE BRAIN (Now calls local backend) ---
         async function talkToAI(text) {
             if (!text) return;
             addMsg(text, 'user');
@@ -201,9 +201,10 @@
             };
 
             try {
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                // CHANGED: We now fetch our own Netlify function
+                const response = await fetch("/.netlify/functions/chat", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: MODEL_NAME,
                         messages: [systemPrompt, ...memory.slice(-8)],
@@ -211,90 +212,108 @@
                     })
                 });
 
+                if(!response.ok) throw new Error("Backend Error");
+
                 const data = await response.json();
                 let aiData = JSON.parse(data.choices[0].message.content);
+                
                 memory.push({ role: 'assistant', content: aiData.reply });
                 saveMemory();
 
-                setTimeout(() => { removeMsg(thinkingId); addMsg(aiData.reply, 'ai'); speakHuman(aiData.reply, aiData.emotion); }, Math.random() * 800 + 200);
-            } catch (e) { console.error(e); removeMsg(thinkingId); addMsg("Connection blip!", 'ai'); }
+                removeMsg(thinkingId);
+                addMsg(aiData.reply, 'ai');
+                speakHuman(aiData.reply, aiData.emotion);
+
+            } catch (e) { 
+                console.error(e); 
+                removeMsg(thinkingId); 
+                addMsg("Brain freeze (Connection Error).", 'ai'); 
+            }
         }
 
-        // --- 3. 🗣️ HUMAN VOICE & AURA INTERACTION ---
+        // --- 3. SPEECH & AUDIO ---
         function speakHuman(text, emotion) {
             window.speechSynthesis.cancel();
             const ut = new SpeechSynthesisUtterance(text);
-            let pitch=1.0, rate=1.05;
-            if(emotion.includes('happy')) { pitch=1.15; rate=1.1; }
+            let pitch=1.0, rate=1.0;
+            if(emotion.includes('happy')) { pitch=1.1; rate=1.1; }
             if(emotion.includes('sad')) { pitch=0.9; rate=0.9; }
-            ut.pitch=pitch; ut.rate=rate; ut.lang=USER_LANGUAGE;
-            const voices = window.speechSynthesis.getVoices();
-            ut.voice = voices.find(v => (v.name.includes("Google") || v.name.includes("Natural")) && v.lang.startsWith(USER_LANGUAGE.split('-')[0])) || ut.voice;
             
-            // Aura reacts to speaking
+            ut.pitch=pitch; ut.rate=rate; ut.lang=USER_LANGUAGE;
+            // Attempt to find a better voice
+            const voices = window.speechSynthesis.getVoices();
+            const bestVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes("Google") || v.name.includes("Natural")));
+            if(bestVoice) ut.voice = bestVoice;
+
             ut.onstart = () => coreWrapper.classList.add('speaking');
             ut.onend = () => coreWrapper.classList.remove('speaking');
             window.speechSynthesis.speak(ut);
         }
 
-        // --- 4. 👀 VISION, EMOTION AURA & MASKS ---
+        // --- 4. VISION & EMOTION ---
         async function initVision() {
             if (typeof faceapi === 'undefined') { setTimeout(initVision, 500); return; }
-            loadingStatus.innerText = "Loading Models...";
+            loadingStatus.innerText = "Loading Vision Models...";
             try {
                 await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
                 await faceapi.nets.faceLandmark68Net.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
                 await faceapi.nets.faceExpressionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
-                loadingStatus.innerText = "Ready!"; startBtn.style.display = "block";
+                
+                loadingStatus.innerText = "Ready!";
+                startBtn.style.display = "inline-block";
 
                 const ctx = canvas.getContext('2d');
                 const cam = new Camera(video, {
                     onFrame: async () => {
+                        if(video.paused || video.ended) return;
                         const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions();
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
                         
-                        // Reset aura classes
                         coreWrapper.classList.remove('emo-happy', 'emo-sad', 'emo-angry');
 
                         if (detection) {
                             const ex = detection.expressions;
                             currentEmotion = Object.keys(ex).reduce((a, b) => ex[a] > ex[b] ? a : b);
 
-                            // Update Aura based on emotion
                             if(currentEmotion === 'happy') coreWrapper.classList.add('emo-happy');
                             else if(currentEmotion === 'sad') coreWrapper.classList.add('emo-sad');
                             else if(currentEmotion === 'angry') coreWrapper.classList.add('emo-angry');
 
-                            // Draw Mask
                             if (masks[maskIndex].type !== 'none') {
                                 const nose = detection.landmarks.getNose()[3];
                                 const jaw = detection.landmarks.getJawOutline();
-                                const fontSize = (jaw[16].x - jaw[0].x) * masks[maskIndex].scale;
-                                ctx.font = `${fontSize}px serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                                const width = jaw[16].x - jaw[0].x;
+                                const fontSize = width * masks[maskIndex].scale;
+                                ctx.font = `${fontSize}px serif`; 
+                                ctx.textAlign = "center"; 
+                                ctx.textBaseline = "middle";
                                 ctx.fillText(masks[maskIndex].emoji, nose.x, nose.y);
                             }
                         }
                     }, width: 320, height: 240
                 });
                 cam.start();
-            } catch (e) { console.error(e); loadingStatus.innerText = "Error loading models."; }
+            } catch (e) { 
+                console.error(e); 
+                loadingStatus.innerText = "Camera Error. Check permissions."; 
+            }
         }
 
-        // --- UTILS & STARTUP ---
+        // --- UTILS ---
         function saveMemory() { localStorage.setItem('vibemate_memory', JSON.stringify(memory)); }
         function clearMemory() { localStorage.removeItem('vibemate_memory'); memory = []; chatLog.innerHTML = ''; addMsg("Memory wiped.", 'system'); }
         function addMsg(text, type, isTemp=false) {
             const div = document.createElement('div'); div.className = `msg ${type}`; div.innerText = text;
-            if (type==='system') { div.style.background='none'; div.style.opacity='0.7'; div.style.alignSelf='center'; }
+            if (type==='system') { div.style.background='none'; div.style.opacity='0.7'; div.style.alignSelf='center'; div.style.fontSize = '12px'; }
             if(isTemp) div.id='temp-msg'; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight; return div.id;
         }
-        function removeMsg(id) { const el = document.getElementById('temp-msg'); if(el) el.remove(); }
+        function removeMsg(id) { const el = document.getElementById(id); if(el) el.remove(); }
 
         startBtn.onclick = () => {
             document.getElementById('overlay').style.display = 'none';
             canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            setupMaskUI(); // Initialize the mask bar
-            if(memory.length === 0) speakHuman("Welcome to Vibe Digital. Select a mask to begin!", "happy");
+            setupMaskUI();
+            if(memory.length === 0) speakHuman("Hello! I am Vibe.", "happy");
         };
 
         initVision();
