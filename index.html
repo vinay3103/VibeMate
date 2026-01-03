@@ -3,20 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VibeMate</title>
+    <title>VibeMate: Enhanced Voices</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <style>
         /* --- THEME & RESET --- */
         :root { 
             --primary: #8b5cf6;
-            --glass: rgba(20, 25, 40, 0.85); /* Slightly darker for better contrast */
+            --glass: rgba(20, 25, 40, 0.9);
             --glow-happy: #fbbf24;
             --glow-sad: #3b82f6;
             --glow-angry: #ef4444;
             --glow-neutral: #a855f7;
+            --glow-success: #10b981;
         }
 
         * { box-sizing: border-box; }
@@ -24,45 +31,38 @@
         body { 
             margin: 0; font-family: 'Outfit', sans-serif; 
             overflow: hidden; 
-            height: 100dvh; /* dynamic viewport height for mobile browsers */
+            height: 100dvh; 
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             background: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
             background-size: 400% 400%;
             animation: plasmaShift 15s ease infinite;
             color: white;
-            padding-top: 20px;
+            padding-top: 10px;
         }
 
-        /* Animation Keyframes */
         @keyframes plasmaShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        @keyframes pulseFast { 0%, 100% { box-shadow: 0 0 40px currentColor; scale: 1; } 50% { box-shadow: 0 0 70px currentColor; scale: 1.02; } }
-        @keyframes breatheDeep { 0%, 100% { box-shadow: 0 0 30px currentColor; scale: 1; } 50% { box-shadow: 0 0 60px currentColor; scale: 1.01; } }
-        @keyframes shakeGlow { 0%, 100% { box-shadow: 0 0 50px currentColor; transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
-
+        
         /* --- AVATAR / CORE --- */
         #core-wrapper { 
             position: relative; 
-            width: 260px; height: 260px; 
-            flex-shrink: 0; /* Don't squash the face */
+            width: 160px; height: 160px; 
+            flex-shrink: 0;
             border-radius: 50%;
-            box-shadow: 0 0 60px var(--glow-neutral), inset 0 0 20px var(--glow-neutral);
+            box-shadow: 0 0 40px var(--glow-neutral), inset 0 0 10px var(--glow-neutral);
             transition: all 0.5s ease;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
-        /* Responsive Avatar Size */
-        @media (max-height: 700px) {
-            #core-wrapper { width: 180px; height: 180px; margin-bottom: 10px; }
-        }
+        #core-wrapper.emo-happy { box-shadow: 0 0 50px var(--glow-happy); border-color: var(--glow-happy); }
+        #core-wrapper.emo-sad   { box-shadow: 0 0 50px var(--glow-sad); border-color: var(--glow-sad); }
+        #core-wrapper.emo-angry { box-shadow: 0 0 50px var(--glow-angry); border-color: var(--glow-angry); }
+        #core-wrapper.speaking { animation: pulseSpeak 0.5s infinite alternate; }
 
-        #core-wrapper.emo-happy { animation: pulseFast 1.5s infinite; color: var(--glow-happy); }
-        #core-wrapper.emo-sad   { animation: breatheDeep 4s infinite; color: var(--glow-sad); }
-        #core-wrapper.emo-angry { animation: shakeGlow 0.5s infinite; color: var(--glow-angry); }
-        #core-wrapper.speaking { filter: brightness(1.3); }
+        @keyframes pulseSpeak { from { transform: scale(1); } to { transform: scale(1.05); } }
 
         #avatar-circle {
             position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; 
-            border: 4px solid rgba(255,255,255,0.8); background: #000; z-index: 2;
+            border: 3px solid rgba(255,255,255,0.6); background: #000; z-index: 2;
             display: flex; justify-content: center; align-items: center;
         }
         #video-preview, #face-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
@@ -70,8 +70,8 @@
 
         /* --- UI CARD --- */
         #ui-card {
-            width: 90%; max-width: 500px; 
-            flex: 1; /* Fill remaining height */
+            width: 90%; max-width: 600px; 
+            flex: 1; 
             margin-bottom: 20px;
             background: var(--glass); backdrop-filter: blur(20px); border-radius: 24px;
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -79,16 +79,29 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        #mask-bar {
-            display: flex; gap: 10px; padding: 10px 15px; overflow-x: auto;
-            background: rgba(0,0,0,0.2); scrollbar-width: none; flex-shrink: 0;
+        /* Voice Bar */
+        #voice-bar {
+            display: flex; gap: 10px; padding: 15px; overflow-x: auto;
+            background: rgba(0,0,0,0.2); scrollbar-width: none; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .mask-item {
-            font-size: 24px; width: 45px; height: 45px; border-radius: 12px;
-            background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.2s; border: 2px solid transparent; flex-shrink: 0;
+        .voice-item {
+            padding: 8px 16px; border-radius: 20px;
+            background: rgba(255,255,255,0.1); 
+            cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 13px; font-weight: 600;
+            border: 1px solid transparent;
         }
-        .mask-item.active { border-color: var(--primary); background: rgba(139, 92, 246, 0.2); transform: scale(1.05); }
+        .voice-item.active { border-color: var(--primary); background: var(--primary); color: white; transform: translateY(-2px); }
+
+        /* Sign Language Buffer */
+        #sign-display {
+            padding: 10px; background: rgba(0,0,0,0.3);
+            min-height: 45px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+        .sign-word {
+            background: var(--glow-success); color: black; padding: 4px 10px; border-radius: 12px; 
+            font-weight: 800; font-size: 14px; animation: popIn 0.2s ease;
+        }
+        #detected-hint { font-size: 12px; color: #888; margin-left: auto; text-transform: uppercase; }
 
         #chat-log { 
             flex: 1; overflow-y: auto; padding: 15px; 
@@ -98,28 +111,41 @@
         .msg { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 15px; line-height: 1.4; animation: popIn 0.3s ease; word-wrap: break-word;}
         .ai { align-self: flex-start; background: rgba(139, 92, 246, 0.25); color: #ddd6fe; border-top-left-radius: 4px; }
         .user { align-self: flex-end; background: rgba(59, 130, 246, 0.25); color: #bfdbfe; border-top-right-radius: 4px; }
-        
+        .system { align-self: center; color: #aaa; font-size: 12px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 10px; }
+
         #controls { padding: 15px; background: rgba(0,0,0,0.3); display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
         #text-input { flex: 1; padding: 12px 16px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: white; outline: none; font-size: 16px; }
-        .icon-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); border: none; color: white; cursor: pointer; font-size: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-        .listening { background: #ef4444 !important; animation: pulseRed 1s infinite; }
-
+        .icon-btn { width: 45px; height: 45px; border-radius: 50%; background: var(--primary); border: none; color: white; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s;}
+        .icon-btn:active { transform: scale(0.9); }
+        #send-sign-btn { background: var(--glow-success); color: black; }
+        
         @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } }
 
         /* OVERLAYS */
-        #overlay { position: absolute; inset: 0; background: #000; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;}
+        #overlay { position: absolute; inset: 0; background: #000; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 25px;}
         #start-btn { margin-top: 30px; padding: 15px 40px; font-size: 18px; background: white; color: black; border: none; border-radius: 40px; cursor: pointer; font-weight: bold; display: none; }
+        
+        .feature-list { text-align: left; margin-top: 20px; font-size: 15px; line-height: 1.8; color: #ccc; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); width: 100%; max-width: 400px;}
+        .feature-list span { color: var(--primary); font-weight: bold; font-size: 18px; margin-right: 8px; }
+
         #reset-mem-btn { position: absolute; top: 10px; right: 10px; opacity: 0.6; font-size: 11px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 20px; cursor: pointer; z-index: 60;}
     </style>
 </head>
 <body>
 
     <div id="overlay">
-        <h1 style="font-size: 3rem; margin: 0; background: linear-gradient(to right, #fff, #8b5cf6); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">VibeMate</h1>
-        <p style="color: #aaa; margin-top: 10px;">Emotional AI Interface</p>
-        <div id="loading-status" style="margin-top:20px; color:#8b5cf6; font-weight:bold;">Initializing Neural Net...</div>
-        <button id="start-btn">Enter Interface</button>
+        <h1 style="font-size: 2.5rem; margin: 0; background: linear-gradient(to right, #fff, #8b5cf6); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">VibeMate</h1>
+        <p style="color: #aaa; margin: 5px 0 0 0;">The Ultimate AI Companion</p>
+        
+        <div class="feature-list">
+            <div><span>✋</span> <b>Sign Language:</b> I can read your hand gestures to help you communicate.</div>
+            <div><span>😊</span> <b>Emotion Aware:</b> I can see if you are happy or sad and react to it.</div>
+            <div><span>🧠</span> <b>Memory:</b> I remember what we talked about.</div>
+            <div><span>🎭</span> <b>Personas:</b> Choose from 8 unique voices like Alien, Ghost, or Cowboy!</div>
+        </div>
+
+        <div id="loading-status" style="margin-top:20px; color:#8b5cf6; font-weight:bold;">Loading Neural Models...</div>
+        <button id="start-btn">Start Experience</button>
     </div>
 
     <button id="reset-mem-btn" onclick="clearMemory()">Clear Memory</button>
@@ -132,200 +158,286 @@
     </div>
 
     <div id="ui-card">
-        <div id="mask-bar"></div>
+        <div id="voice-bar"></div>
+        
+        <div id="sign-display">
+            <div id="detected-hint">...</div>
+        </div>
+
         <div id="chat-log"></div>
+        
         <div id="controls">
-            <input type="text" id="text-input" placeholder="Type a message..." autocomplete="off">
+            <button id="clear-btn" class="icon-btn" style="background:#ef4444" onclick="clearSignBuffer()">❌</button>
+            <input type="text" id="text-input" placeholder="Type or Sign..." autocomplete="off">
             <button id="mic-btn" class="icon-btn">🎙️</button>
+            <button id="send-sign-btn" class="icon-btn" onclick="sendInput()">🗣️</button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script>
         // --- ⚙️ CONFIGURATION ---
-        // NOTE: No API Key here! We call our own backend now.
         const MODEL_NAME = 'llama-3.3-70b-versatile'; 
         const USER_LANGUAGE = 'en-US'; 
 
         // --- 🧠 STATE ---
         let memory = JSON.parse(localStorage.getItem('vibemate_memory')) || [];
         let currentEmotion = "neutral";
-        const masks = [
-            { type: 'none', emoji: '🚫', scale: 1 },
-            { type: 'monkey', emoji: '🐵', scale: 2.5 },
-            { type: 'dog', emoji: '🐶', scale: 2.5 },
-            { type: 'cat', emoji: '🐱', scale: 2.4 },
-            { type: 'cool', emoji: '😎', scale: 2.2 },
-            { type: 'alien', emoji: '👽', scale: 2.2 },
-            { type: 'robot', emoji: '🤖', scale: 2.4 }
-        ];
-        let maskIndex = 0;
+        let signBuffer = [];
+        let lastStableSign = null;
+        let signHoldTimer = 0;
         
+        // --- 🗣️ NEW ENHANCED VOICE PROFILES ---
+        // genderPreference: 'male' or 'female' helps the system pick the right browser voice
+        const voices = [
+            { id: 'friend', name: 'Friend 💙', pitch: 1.0, rate: 1.0, genderPreference: 'female', prompt: "You are VibeMate, a kind and helpful friend. You chat naturally." },
+            { id: 'kid', name: 'Kid 🎈', pitch: 1.4, rate: 1.1, genderPreference: 'female', prompt: "You are a playful 8-year-old kid. Use emojis and simple words!" },
+            { id: 'robot', name: 'Robot 🤖', pitch: 0.6, rate: 1.2, genderPreference: 'male', prompt: "I am Robot Unit 734. I speak efficiently. Affirmative." },
+            { id: 'cowboy', name: 'Cowboy 🤠', pitch: 0.7, rate: 0.9, genderPreference: 'male', prompt: "Howdy partner! Speak like a rugged cowboy from the west. Use words like 'Y'all' and 'Reckon'." },
+            { id: 'alien', name: 'Alien 👽', pitch: 1.8, rate: 1.3, genderPreference: 'female', prompt: "Greetings Earthling. You are an Alien visitor. You are fascinated by humans. Speak in a curious way." },
+            { id: 'butler', name: 'Butler 🧐', pitch: 0.8, rate: 0.9, genderPreference: 'male', prompt: "You are a polite, formal British Butler. Address the user as 'Sir' or 'Madam'. Be very sophisticated." },
+            { id: 'ghost', name: 'Ghost 👻', pitch: 0.5, rate: 0.7, genderPreference: 'male', prompt: "You are a friendly ghost. Speak slowly and mysteriously. Say 'Ooooo' occasionally." },
+            { id: 'chipmunk', name: 'Chipmunk 🐿️', pitch: 2.0, rate: 1.5, genderPreference: 'female', prompt: "You are a hyperactive chipmunk! You talk very fast and are very excited about everything!" }
+        ];
+        let currentVoice = 0;
+
         // DOM Elements
         const chatLog = document.getElementById('chat-log');
         const video = document.getElementById('video-preview');
         const canvas = document.getElementById('face-canvas');
         const coreWrapper = document.getElementById('core-wrapper');
-        const maskBar = document.getElementById('mask-bar');
-        const loadingStatus = document.getElementById('loading-status');
+        const signDisplay = document.getElementById('sign-display');
+        const hintText = document.getElementById('detected-hint');
+        const textInput = document.getElementById('text-input');
+        const voiceBar = document.getElementById('voice-bar');
         const startBtn = document.getElementById('start-btn');
+        const loadingStatus = document.getElementById('loading-status');
 
-        // --- 1. UI SETUP ---
-        function setupMaskUI() {
-            maskBar.innerHTML = '';
-            masks.forEach((mask, index) => {
+        // --- 1. UI LOGIC ---
+        function setupVoiceUI() {
+            voiceBar.innerHTML = '';
+            voices.forEach((v, index) => {
                 const el = document.createElement('div');
-                el.className = `mask-item ${index === maskIndex ? 'active' : ''}`;
-                el.innerText = mask.emoji;
+                el.className = `voice-item ${index === currentVoice ? 'active' : ''}`;
+                el.innerText = v.name;
                 el.onclick = () => {
-                    maskIndex = index;
-                    document.querySelectorAll('.mask-item').forEach(i => i.classList.remove('active'));
+                    currentVoice = index;
+                    document.querySelectorAll('.voice-item').forEach(i => i.classList.remove('active'));
                     el.classList.add('active');
                 };
-                maskBar.appendChild(el);
+                voiceBar.appendChild(el);
             });
         }
 
-        // --- 2. THE BRAIN (Now calls local backend) ---
-        async function talkToAI(text) {
-            if (!text) return;
-            addMsg(text, 'user');
-            const thinkingId = addMsg("Thinking...", 'ai', true);
+        function updateSignUI() {
+            Array.from(signDisplay.getElementsByClassName('sign-word')).forEach(e => e.remove());
+            signBuffer.forEach(word => {
+                const span = document.createElement('span');
+                span.className = 'sign-word';
+                span.innerText = word;
+                signDisplay.insertBefore(span, hintText);
+            });
+            if(signBuffer.length > 0) textInput.value = signBuffer.join(" ");
+        }
 
+        function clearSignBuffer() {
+            signBuffer = [];
+            textInput.value = "";
+            updateSignUI();
+        }
+
+        // --- 2. VISION (FACE + HANDS) ---
+        async function initVision() {
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+                await faceapi.nets.faceExpressionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+                
+                const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+                hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5});
+                hands.onResults(onHandResults);
+
+                const camera = new Camera(video, {
+                    onFrame: async () => {
+                        if(video.paused || video.ended) return;
+                        await hands.send({image: video}); 
+                        detectFace(); 
+                    }, width: 320, height: 240
+                });
+
+                loadingStatus.innerText = "All Systems Go.";
+                startBtn.style.display = "inline-block";
+                
+                startBtn.onclick = () => {
+                    document.getElementById('overlay').style.display = 'none';
+                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                    setupVoiceUI();
+                    camera.start();
+                    if(memory.length === 0) speakHuman("Hello! I am Vibe Mate. Pick a voice and let's chat!", "happy");
+                    else {
+                         memory.forEach(m => {
+                             if(m.role === 'user') addMsg(m.content, 'user');
+                             if(m.role === 'assistant') addMsg(m.content, 'ai');
+                         });
+                    }
+                };
+            } catch(e) { console.error(e); loadingStatus.innerText = "Error loading AI models."; }
+        }
+
+        const ctx = canvas.getContext('2d');
+        function onHandResults(results) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const lm = results.multiHandLandmarks[0];
+                ctx.save(); ctx.scale(-1, 1); ctx.translate(-canvas.width, 0);
+                drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#8b5cf6', lineWidth: 2});
+                drawLandmarks(ctx, lm, {color: '#fbbf24', lineWidth: 1, radius: 2});
+                ctx.restore();
+
+                const sign = detectSign(lm);
+                if (sign) handleDetectedSign(sign);
+                else { hintText.innerText = "..."; signHoldTimer=0; }
+            }
+        }
+
+        function detectSign(lm) {
+            const isExtended = (tip, pip) => lm[tip].y < lm[pip].y;
+            const thumbOpen = Math.abs(lm[4].x - lm[17].x) > 0.15;
+            const [i, m, r, p] = [isExtended(8,6), isExtended(12,10), isExtended(16,14), isExtended(20,18)];
+            
+            if(thumbOpen && i && m && r && p) return "HELLO";
+            if(!thumbOpen && i && !m && !r && !p) return "YOU";
+            if(!thumbOpen && i && m && !r && !p) return "PEACE";
+            if(thumbOpen && i && !m && !r && p) return "LOVE";
+            if(thumbOpen && !i && !m && !r && !p) return "YES";
+            if(!thumbOpen && !i && !m && !r && !p) return "NO";
+            if(thumbOpen && !i && !m && !r && p) return "CALL ME";
+            return null;
+        }
+
+        function handleDetectedSign(sign) {
+            hintText.innerText = sign;
+            if (sign === lastStableSign) {
+                signHoldTimer++;
+                if (signHoldTimer === 20) { 
+                    if(signBuffer[signBuffer.length-1] !== sign) {
+                        signBuffer.push(sign);
+                        updateSignUI();
+                    }
+                }
+            } else { lastStableSign = sign; signHoldTimer = 0; }
+        }
+
+        async function detectFace() {
+            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+            if(detection) {
+                const ex = detection.expressions;
+                const emo = Object.keys(ex).reduce((a, b) => ex[a] > ex[b] ? a : b);
+                if(currentEmotion !== emo) {
+                    currentEmotion = emo;
+                    coreWrapper.className = '';
+                    if(emo === 'happy') coreWrapper.classList.add('emo-happy');
+                    else if(emo === 'sad') coreWrapper.classList.add('emo-sad');
+                    else if(emo === 'angry') coreWrapper.classList.add('emo-angry');
+                }
+            }
+        }
+
+        // --- 3. BRAIN & SPEECH ---
+        async function sendInput() {
+            const text = textInput.value;
+            if(!text) return;
+            
+            addMsg(text, 'user');
             memory.push({ role: 'user', content: text });
             saveMemory();
+            clearSignBuffer();
+
+            const thinkingId = addMsg("Thinking...", 'ai', true);
 
             const systemPrompt = {
                 role: "system", 
-                content: `You are Vibe. User Emotion: ${currentEmotion}. Current Mask: ${masks[maskIndex].type}. Language: ${USER_LANGUAGE}. Tone: Friendly, brief, human-like. Output ONLY JSON: { "reply": "text", "emotion": "happy/sad/excited/neutral/angry" }`
+                content: `${voices[currentVoice].prompt} 
+                Current User Emotion: ${currentEmotion}. 
+                Context: User may use Sign Language keywords. 
+                Output JSON: { "reply": "text", "emotion": "happy/neutral/sad" }`
             };
 
             try {
-                // CHANGED: We now fetch our own Netlify function
                 const response = await fetch("/.netlify/functions/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: MODEL_NAME,
-                        messages: [systemPrompt, ...memory.slice(-8)],
-                        temperature: 0.8, max_tokens: 120, response_format: { type: "json_object" }
+                        messages: [systemPrompt, ...memory.slice(-10)],
+                        response_format: { type: "json_object" }
                     })
                 });
-
-                if(!response.ok) throw new Error("Backend Error");
-
-                const data = await response.json();
-                let aiData = JSON.parse(data.choices[0].message.content);
                 
-                memory.push({ role: 'assistant', content: aiData.reply });
-                saveMemory();
+                const data = await response.json();
+                const aiData = JSON.parse(data.choices[0].message.content);
 
                 removeMsg(thinkingId);
                 addMsg(aiData.reply, 'ai');
+                memory.push({ role: 'assistant', content: aiData.reply });
+                saveMemory();
+                
                 speakHuman(aiData.reply, aiData.emotion);
 
-            } catch (e) { 
-                console.error(e); 
-                removeMsg(thinkingId); 
-                addMsg("Brain freeze (Connection Error).", 'ai'); 
-            }
+            } catch(e) { removeMsg(thinkingId); console.error(e); }
         }
 
-        // --- 3. SPEECH & AUDIO ---
         function speakHuman(text, emotion) {
             window.speechSynthesis.cancel();
             const ut = new SpeechSynthesisUtterance(text);
-            let pitch=1.0, rate=1.0;
-            if(emotion.includes('happy')) { pitch=1.1; rate=1.1; }
-            if(emotion.includes('sad')) { pitch=0.9; rate=0.9; }
+            const v = voices[currentVoice];
             
-            ut.pitch=pitch; ut.rate=rate; ut.lang=USER_LANGUAGE;
-            // Attempt to find a better voice
-            const voices = window.speechSynthesis.getVoices();
-            const bestVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes("Google") || v.name.includes("Natural")));
-            if(bestVoice) ut.voice = bestVoice;
+            ut.pitch = v.pitch + (emotion==='happy'?0.1:0);
+            ut.rate = v.rate;
+            
+            // Advanced Voice Selection
+            const allVoices = window.speechSynthesis.getVoices();
+            let selectedVoice = null;
+
+            // 1. Try to match specific preferred names first
+            if(v.id === 'robot') selectedVoice = allVoices.find(x => x.name.includes("Google UK English Male") || x.name.includes("Zira"));
+            
+            // 2. If no specific match, try to match gender
+            if(!selectedVoice) {
+                if (v.genderPreference === 'male') {
+                    selectedVoice = allVoices.find(x => x.name.includes('Male') || x.name.includes('David'));
+                } else {
+                    selectedVoice = allVoices.find(x => x.name.includes('Female') || x.name.includes('Zira') || x.name.includes('Google US English'));
+                }
+            }
+            
+            if(selectedVoice) ut.voice = selectedVoice;
 
             ut.onstart = () => coreWrapper.classList.add('speaking');
             ut.onend = () => coreWrapper.classList.remove('speaking');
             window.speechSynthesis.speak(ut);
         }
 
-        // --- 4. VISION & EMOTION ---
-        async function initVision() {
-            if (typeof faceapi === 'undefined') { setTimeout(initVision, 500); return; }
-            loadingStatus.innerText = "Loading Vision Models...";
-            try {
-                await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
-                await faceapi.nets.faceLandmark68Net.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
-                await faceapi.nets.faceExpressionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
-                
-                loadingStatus.innerText = "Ready!";
-                startBtn.style.display = "inline-block";
-
-                const ctx = canvas.getContext('2d');
-                const cam = new Camera(video, {
-                    onFrame: async () => {
-                        if(video.paused || video.ended) return;
-                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions();
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        
-                        coreWrapper.classList.remove('emo-happy', 'emo-sad', 'emo-angry');
-
-                        if (detection) {
-                            const ex = detection.expressions;
-                            currentEmotion = Object.keys(ex).reduce((a, b) => ex[a] > ex[b] ? a : b);
-
-                            if(currentEmotion === 'happy') coreWrapper.classList.add('emo-happy');
-                            else if(currentEmotion === 'sad') coreWrapper.classList.add('emo-sad');
-                            else if(currentEmotion === 'angry') coreWrapper.classList.add('emo-angry');
-
-                            if (masks[maskIndex].type !== 'none') {
-                                const nose = detection.landmarks.getNose()[3];
-                                const jaw = detection.landmarks.getJawOutline();
-                                const width = jaw[16].x - jaw[0].x;
-                                const fontSize = width * masks[maskIndex].scale;
-                                ctx.font = `${fontSize}px serif`; 
-                                ctx.textAlign = "center"; 
-                                ctx.textBaseline = "middle";
-                                ctx.fillText(masks[maskIndex].emoji, nose.x, nose.y);
-                            }
-                        }
-                    }, width: 320, height: 240
-                });
-                cam.start();
-            } catch (e) { 
-                console.error(e); 
-                loadingStatus.innerText = "Camera Error. Check permissions."; 
-            }
-        }
-
         // --- UTILS ---
         function saveMemory() { localStorage.setItem('vibemate_memory', JSON.stringify(memory)); }
-        function clearMemory() { localStorage.removeItem('vibemate_memory'); memory = []; chatLog.innerHTML = ''; addMsg("Memory wiped.", 'system'); }
+        function clearMemory() { localStorage.removeItem('vibemate_memory'); memory = []; chatLog.innerHTML = ''; }
         function addMsg(text, type, isTemp=false) {
             const div = document.createElement('div'); div.className = `msg ${type}`; div.innerText = text;
-            if (type==='system') { div.style.background='none'; div.style.opacity='0.7'; div.style.alignSelf='center'; div.style.fontSize = '12px'; }
             if(isTemp) div.id='temp-msg'; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight; return div.id;
         }
         function removeMsg(id) { const el = document.getElementById(id); if(el) el.remove(); }
 
-        startBtn.onclick = () => {
-            document.getElementById('overlay').style.display = 'none';
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            setupMaskUI();
-            if(memory.length === 0) speakHuman("Hello! I am Vibe.", "happy");
-        };
-
-        initVision();
-
-        const input = document.getElementById('text-input');
-        input.addEventListener('keypress', (e) => { if(e.key === 'Enter') { talkToAI(input.value); input.value=''; } });
+        textInput.addEventListener('keypress', (e) => { if(e.key==='Enter') sendInput(); });
+        
         const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
         if(Speech) {
-            const rec = new Speech(); rec.lang = USER_LANGUAGE; const btn = document.getElementById('mic-btn');
-            rec.onstart = () => btn.classList.add('listening'); rec.onend = () => btn.classList.remove('listening');
-            rec.onresult = (e) => talkToAI(e.results[0][0].transcript); btn.onclick = () => rec.start();
+            const rec = new Speech(); rec.lang = USER_LANGUAGE; 
+            const btn = document.getElementById('mic-btn');
+            rec.onstart = () => btn.style.background = '#ef4444'; 
+            rec.onend = () => btn.style.background = 'var(--primary)';
+            rec.onresult = (e) => { textInput.value = e.results[0][0].transcript; sendInput(); };
+            btn.onclick = () => rec.start();
         }
+
+        initVision();
     </script>
 </body>
 </html>
