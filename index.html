@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VibeMate: Enhanced Voices</title>
+    <title>VibeMate: Expanded</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -18,7 +18,7 @@
         /* --- THEME & RESET --- */
         :root { 
             --primary: #8b5cf6;
-            --glass: rgba(20, 25, 40, 0.9);
+            --glass: rgba(15, 20, 35, 0.95);
             --glow-happy: #fbbf24;
             --glow-sad: #3b82f6;
             --glow-angry: #ef4444;
@@ -26,7 +26,7 @@
             --glow-success: #10b981;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
             margin: 0; font-family: 'Outfit', sans-serif; 
@@ -34,121 +34,167 @@
             height: 100dvh; 
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             background: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
-            background-size: 400% 400%;
-            animation: plasmaShift 15s ease infinite;
             color: white;
             padding-top: 10px;
+            transition: all 0.5s ease;
         }
 
-        @keyframes plasmaShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        
-        /* --- AVATAR / CORE --- */
+        /* --- AVATAR / CAMERA --- */
         #core-wrapper { 
             position: relative; 
-            width: 160px; height: 160px; 
+            width: 140px; height: 140px; 
             flex-shrink: 0;
             border-radius: 50%;
-            box-shadow: 0 0 40px var(--glow-neutral), inset 0 0 10px var(--glow-neutral);
-            transition: all 0.5s ease;
-            margin-bottom: 15px;
+            box-shadow: 0 0 30px var(--glow-neutral);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 10px; z-index: 10;
+            background: #000;
         }
 
-        #core-wrapper.emo-happy { box-shadow: 0 0 50px var(--glow-happy); border-color: var(--glow-happy); }
-        #core-wrapper.emo-sad   { box-shadow: 0 0 50px var(--glow-sad); border-color: var(--glow-sad); }
-        #core-wrapper.emo-angry { box-shadow: 0 0 50px var(--glow-angry); border-color: var(--glow-angry); }
-        #core-wrapper.speaking { animation: pulseSpeak 0.5s infinite alternate; }
+        /* GUIDE MODE: BIG CAMERA */
+        body.guide-active #core-wrapper {
+            width: 260px; height: 260px; 
+            border-radius: 20px; 
+            margin-top: 10px;
+            box-shadow: 0 0 60px var(--primary);
+        }
 
+        @media (min-width: 768px) {
+            body.guide-active { flex-direction: row; justify-content: center; align-items: center; gap: 40px; }
+            body.guide-active #core-wrapper { width: 400px; height: 300px; }
+        }
+
+        #core-wrapper.emo-happy { box-shadow: 0 0 40px var(--glow-happy); border: 2px solid var(--glow-happy); }
+        #core-wrapper.speaking { animation: pulseSpeak 0.4s infinite alternate; }
         @keyframes pulseSpeak { from { transform: scale(1); } to { transform: scale(1.05); } }
 
         #avatar-circle {
-            position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; 
-            border: 3px solid rgba(255,255,255,0.6); background: #000; z-index: 2;
-            display: flex; justify-content: center; align-items: center;
+            position: relative; width: 100%; height: 100%; border-radius: inherit; overflow: hidden; 
+            border: 3px solid rgba(255,255,255,0.5); background: #000;
         }
         #video-preview, #face-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         #face-canvas { z-index: 3; }
 
         /* --- UI CARD --- */
         #ui-card {
-            width: 90%; max-width: 600px; 
+            width: 95%; max-width: 600px; 
             flex: 1; 
-            margin-bottom: 20px;
-            background: var(--glass); backdrop-filter: blur(20px); border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-bottom: 15px;
+            background: var(--glass); backdrop-filter: blur(15px); border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            transition: all 0.5s ease;
+            position: relative; z-index: 5;
         }
 
-        /* Voice Bar */
+        /* GUIDE MODE ADJUSTMENTS */
+        body.guide-active #ui-card { background: transparent; border: none; box-shadow: none; overflow: visible; }
+        body.guide-active #chat-log, body.guide-active #voice-bar, body.guide-active #sign-container { display: none; } 
+        
+        body.guide-active #controls {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px; background: rgba(0,0,0,0.9); border-radius: 40px;
+            z-index: 100; box-shadow: 0 10px 40px black; border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* --- SIGN GUIDE LIBRARY --- */
+        #guide-modal {
+            position: absolute; inset: 0; top: 0; 
+            background: transparent; z-index: 40;
+            display: none; flex-direction: column; 
+            height: 100%; width: 100%;
+        }
+        
+        body.guide-active #guide-modal { display: flex; position: relative; height: auto; flex: 1; width: 100%; overflow: hidden;}
+
+        .guide-scroll-area {
+            overflow-y: auto; height: 100%; padding: 10px 20px 100px 20px; scrollbar-width: none;
+        }
+
+        .guide-section-title {
+            color: #8b5cf6; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
+            margin: 20px 0 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;
+        }
+
+        .guide-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; 
+        }
+        
+        .sign-card {
+            background: rgba(255,255,255,0.1); border-radius: 16px; padding: 15px 5px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            border: 2px solid transparent; transition: all 0.3s; cursor: pointer;
+        }
+        
+        .sign-emoji { font-size: 50px; margin-bottom: 8px; transition: transform 0.2s; }
+        .sign-title { font-weight: 800; color: white; margin-bottom: 4px; font-size: 16px; text-transform: uppercase; }
+        .sign-desc { font-size: 12px; color: #ccc; line-height: 1.2; padding: 0 5px;}
+
+        .sign-card.active-match {
+            background: rgba(16, 185, 129, 0.25); border-color: #10b981; transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Phrase List in Guide */
+        .phrase-item {
+            background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 8px;
+            font-size: 14px; color: #ddd; display: flex; align-items: center; gap: 10px;
+        }
+        .phrase-arrow { color: var(--primary); font-weight: bold; }
+
+        /* --- SUBTITLE TOAST (For Guide Mode) --- */
+        #subtitle-toast {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); border: 1px solid var(--primary);
+            color: #fff; padding: 15px 25px; border-radius: 30px;
+            text-align: center; font-size: 16px; font-weight: 600;
+            z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        #subtitle-toast.visible { opacity: 1; pointer-events: auto; }
+
+        /* --- STANDARD UI --- */
         #voice-bar {
-            display: flex; gap: 10px; padding: 15px; overflow-x: auto;
-            background: rgba(0,0,0,0.2); scrollbar-width: none; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; gap: 12px; padding: 15px; overflow-x: auto;
+            background: rgba(0,0,0,0.2); scrollbar-width: none; flex-shrink: 0; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .voice-item {
-            padding: 8px 16px; border-radius: 20px;
-            background: rgba(255,255,255,0.1); 
-            cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 13px; font-weight: 600;
-            border: 1px solid transparent;
+            padding: 8px 16px; border-radius: 12px; background: rgba(255,255,255,0.08); 
+            cursor: pointer; font-size: 13px; font-weight: 600; color: #ccc; flex-shrink: 0; white-space: nowrap;
         }
-        .voice-item.active { border-color: var(--primary); background: var(--primary); color: white; transform: translateY(-2px); }
+        .voice-item.active { background: var(--primary); color: white; }
 
-        /* Sign Language Buffer */
-        #sign-display {
-            padding: 10px; background: rgba(0,0,0,0.3);
-            min-height: 45px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-        }
-        .sign-word {
-            background: var(--glow-success); color: black; padding: 4px 10px; border-radius: 12px; 
-            font-weight: 800; font-size: 14px; animation: popIn 0.2s ease;
-        }
-        #detected-hint { font-size: 12px; color: #888; margin-left: auto; text-transform: uppercase; }
-
-        #chat-log { 
-            flex: 1; overflow-y: auto; padding: 15px; 
-            display: flex; flex-direction: column; gap: 12px; 
-            scrollbar-width: none; scroll-behavior: smooth; 
-        }
-        .msg { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 15px; line-height: 1.4; animation: popIn 0.3s ease; word-wrap: break-word;}
-        .ai { align-self: flex-start; background: rgba(139, 92, 246, 0.25); color: #ddd6fe; border-top-left-radius: 4px; }
-        .user { align-self: flex-end; background: rgba(59, 130, 246, 0.25); color: #bfdbfe; border-top-right-radius: 4px; }
-        .system { align-self: center; color: #aaa; font-size: 12px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 10px; }
-
-        #controls { padding: 15px; background: rgba(0,0,0,0.3); display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
-        #text-input { flex: 1; padding: 12px 16px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: white; outline: none; font-size: 16px; }
-        .icon-btn { width: 45px; height: 45px; border-radius: 50%; background: var(--primary); border: none; color: white; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s;}
-        .icon-btn:active { transform: scale(0.9); }
-        #send-sign-btn { background: var(--glow-success); color: black; }
+        #sign-container { padding: 12px; background: rgba(0,0,0,0.4); }
+        #sign-words-area { min-height: 40px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .sign-pill { background: #10b981; color: white; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 13px; animation: popIn 0.2s;}
         
-        @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #chat-log { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; scrollbar-width: none; }
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 15px; }
+        .ai { align-self: flex-start; background: rgba(139, 92, 246, 0.2); color: #ddd6fe; }
+        .user { align-self: flex-end; background: rgba(59, 130, 246, 0.2); color: #bfdbfe; }
 
-        /* OVERLAYS */
-        #overlay { position: absolute; inset: 0; background: #000; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 25px;}
-        #start-btn { margin-top: 30px; padding: 15px 40px; font-size: 18px; background: white; color: black; border: none; border-radius: 40px; cursor: pointer; font-weight: bold; display: none; }
+        #controls { padding: 12px; background: rgba(0,0,0,0.2); display: flex; gap: 8px; align-items: center; flex-shrink: 0; transition: all 0.5s; }
+        #text-input { flex: 1; padding: 12px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 16px; }
+        .icon-btn { width: 50px; height: 50px; border-radius: 50%; background: var(--primary); border: none; color: white; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+        #overlay { position: absolute; inset: 0; background: #0f0c29; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px;}
+        #start-btn { margin-top: 30px; padding: 16px 45px; font-size: 18px; background: linear-gradient(90deg, #8b5cf6, #3b82f6); color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: 800; display: none; }
         
-        .feature-list { text-align: left; margin-top: 20px; font-size: 15px; line-height: 1.8; color: #ccc; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); width: 100%; max-width: 400px;}
-        .feature-list span { color: var(--primary); font-weight: bold; font-size: 18px; margin-right: 8px; }
-
-        #reset-mem-btn { position: absolute; top: 10px; right: 10px; opacity: 0.6; font-size: 11px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 20px; cursor: pointer; z-index: 60;}
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
 
     <div id="overlay">
-        <h1 style="font-size: 2.5rem; margin: 0; background: linear-gradient(to right, #fff, #8b5cf6); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">VibeMate</h1>
-        <p style="color: #aaa; margin: 5px 0 0 0;">The Ultimate AI Companion</p>
-        
-        <div class="feature-list">
-            <div><span>✋</span> <b>Sign Language:</b> I can read your hand gestures to help you communicate.</div>
-            <div><span>😊</span> <b>Emotion Aware:</b> I can see if you are happy or sad and react to it.</div>
-            <div><span>🧠</span> <b>Memory:</b> I remember what we talked about.</div>
-            <div><span>🎭</span> <b>Personas:</b> Choose from 8 unique voices like Alien, Ghost, or Cowboy!</div>
-        </div>
-
-        <div id="loading-status" style="margin-top:20px; color:#8b5cf6; font-weight:bold;">Loading Neural Models...</div>
-        <button id="start-btn">Start Experience</button>
+        <h1 style="font-size: 3rem; margin: 0; background: linear-gradient(to right, #fff, #8b5cf6); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">VibeMate</h1>
+        <p style="color: #888; margin-top: 10px;">Sign Language & Voice AI</p>
+        <div id="loading-status" style="margin-top:20px; color:#8b5cf6; font-weight:bold;">Initializing...</div>
+        <button id="start-btn">Start Session</button>
     </div>
 
-    <button id="reset-mem-btn" onclick="clearMemory()">Clear Memory</button>
+    <div id="subtitle-toast"></div>
 
     <div id="core-wrapper">
         <div id="avatar-circle">
@@ -158,61 +204,97 @@
     </div>
 
     <div id="ui-card">
+        
+        <div id="guide-modal">
+            <div class="guide-scroll-area">
+                <div class="guide-section-title">Static Gestures</div>
+                <div class="guide-grid" id="guide-grid"></div>
+
+                <div class="guide-section-title">Common Phrases</div>
+                <div id="phrase-list">
+                    <div class="phrase-item">✋ HELLO <span class="phrase-arrow">→</span> ☝️ YOU</div>
+                    <div class="phrase-item">☝️ YOU <span class="phrase-arrow">→</span> 🤟 LOVE</div>
+                    <div class="phrase-item">🛑 STOP <span class="phrase-arrow">→</span> ✋ PLEASE</div>
+                    <div class="phrase-item">🤙 CALL ME <span class="phrase-arrow">→</span> 👌 OK</div>
+                </div>
+            </div>
+        </div>
+
         <div id="voice-bar"></div>
         
-        <div id="sign-display">
-            <div id="detected-hint">...</div>
+        <div id="sign-container">
+            <div id="sign-words-area">
+                <span style="color:rgba(255,255,255,0.3); font-style:italic;">Signs appear here...</span>
+            </div>
         </div>
 
         <div id="chat-log"></div>
         
         <div id="controls">
-            <button id="clear-btn" class="icon-btn" style="background:#ef4444" onclick="clearSignBuffer()">❌</button>
+            <button id="guide-btn" class="icon-btn" style="background:#f59e0b; box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);" onclick="toggleGuide()">📚</button>
+            <button id="clear-btn" class="icon-btn" style="background:#ef4444" onclick="clearSignBuffer()">🗑️</button>
             <input type="text" id="text-input" placeholder="Type or Sign..." autocomplete="off">
-            <button id="mic-btn" class="icon-btn">🎙️</button>
-            <button id="send-sign-btn" class="icon-btn" onclick="sendInput()">🗣️</button>
+            <button id="send-btn" class="icon-btn" onclick="sendInput()" style="background:#10b981">🗣️</button>
         </div>
     </div>
 
     <script>
-        // --- ⚙️ CONFIGURATION ---
+        // --- CONFIG ---
         const MODEL_NAME = 'llama-3.3-70b-versatile'; 
         const USER_LANGUAGE = 'en-US'; 
-
-        // --- 🧠 STATE ---
         let memory = JSON.parse(localStorage.getItem('vibemate_memory')) || [];
         let currentEmotion = "neutral";
         let signBuffer = [];
         let lastStableSign = null;
         let signHoldTimer = 0;
+        let isGuideOpen = false;
         
-        // --- 🗣️ NEW ENHANCED VOICE PROFILES ---
-        // genderPreference: 'male' or 'female' helps the system pick the right browser voice
+        // Increased threshold for better stability (approx 1.2s)
+        const CONFIRM_THRESHOLD = 12; 
+
+        // --- DATA: SIGNS ---
+        const signLibrary = [
+            { id: 'HELLO', emoji: '✋', title: 'Hello', desc: 'Open Hand, palm forward' },
+            { id: 'YES', emoji: '👍', title: 'Yes', desc: 'Thumbs Up' },
+            { id: 'NO', emoji: '✊', title: 'No', desc: 'Closed Fist' },
+            { id: 'OK', emoji: '👌', title: 'Okay', desc: 'Index touches Thumb' },
+            { id: 'STOP', emoji: '🛑', title: 'Stop', desc: 'Flat hand, palm forward' }, // Contextual: Often same as Hello but held stiffly. We will use logic to differentiate if possible or keep context.
+            { id: 'LOVE', emoji: '🤟', title: 'Love', desc: 'Thumb + Index + Pinky' },
+            { id: 'PEACE', emoji: '✌️', title: 'Peace', desc: 'V Sign with fingers' },
+            { id: 'YOU', emoji: '☝️', title: 'You', desc: 'Point Index Up' },
+            { id: 'CALL ME', emoji: '🤙', title: 'Call Me', desc: 'Thumb + Pinky extended' },
+            { id: 'ROCK', emoji: '🤘', title: 'Rock On', desc: 'Index + Pinky only' },
+            { id: 'LEFT', emoji: '👈', title: 'Left', desc: 'Point Left' },
+            { id: 'RIGHT', emoji: '👉', title: 'Right', desc: 'Point Right' }
+        ];
+
+        // --- DATA: VOICES ---
         const voices = [
-            { id: 'friend', name: 'Friend 💙', pitch: 1.0, rate: 1.0, genderPreference: 'female', prompt: "You are VibeMate, a kind and helpful friend. You chat naturally." },
-            { id: 'kid', name: 'Kid 🎈', pitch: 1.4, rate: 1.1, genderPreference: 'female', prompt: "You are a playful 8-year-old kid. Use emojis and simple words!" },
-            { id: 'robot', name: 'Robot 🤖', pitch: 0.6, rate: 1.2, genderPreference: 'male', prompt: "I am Robot Unit 734. I speak efficiently. Affirmative." },
-            { id: 'cowboy', name: 'Cowboy 🤠', pitch: 0.7, rate: 0.9, genderPreference: 'male', prompt: "Howdy partner! Speak like a rugged cowboy from the west. Use words like 'Y'all' and 'Reckon'." },
-            { id: 'alien', name: 'Alien 👽', pitch: 1.8, rate: 1.3, genderPreference: 'female', prompt: "Greetings Earthling. You are an Alien visitor. You are fascinated by humans. Speak in a curious way." },
-            { id: 'butler', name: 'Butler 🧐', pitch: 0.8, rate: 0.9, genderPreference: 'male', prompt: "You are a polite, formal British Butler. Address the user as 'Sir' or 'Madam'. Be very sophisticated." },
-            { id: 'ghost', name: 'Ghost 👻', pitch: 0.5, rate: 0.7, genderPreference: 'male', prompt: "You are a friendly ghost. Speak slowly and mysteriously. Say 'Ooooo' occasionally." },
-            { id: 'chipmunk', name: 'Chipmunk 🐿️', pitch: 2.0, rate: 1.5, genderPreference: 'female', prompt: "You are a hyperactive chipmunk! You talk very fast and are very excited about everything!" }
+            { id: 'friend', name: 'Friend 💙', pitch: 1.0, rate: 1.0, gender: 'female', prompt: "You are a helpful, casual friend." },
+            { id: 'robot', name: 'Robot 🤖', pitch: 0.5, rate: 1.1, gender: 'male', prompt: "I am Robot Unit 734. Affirmative." },
+            { id: 'news', name: 'News 🎙️', pitch: 0.9, rate: 1.1, gender: 'male', prompt: "You are a professional News Anchor. Speak clearly and formally." },
+            { id: 'granny', name: 'Granny 👵', pitch: 1.4, rate: 0.8, gender: 'female', prompt: "You are a sweet old grandmother. Call the user 'Dearie'." },
+            { id: 'wizard', name: 'Wizard 🧙‍♂️', pitch: 0.4, rate: 0.7, gender: 'male', prompt: "You are a wise ancient wizard. Speak in riddles." },
+            { id: 'pirate', name: 'Pirate 🏴‍☠️', pitch: 0.3, rate: 0.9, gender: 'male', prompt: "Ahoy matey! Speak like a pirate." },
+            { id: 'chipmunk', name: 'Chipmunk 🐿️', pitch: 2.0, rate: 1.5, gender: 'female', prompt: "You are very excited and talk fast!" },
+            { id: 'alien', name: 'Alien 👽', pitch: 1.6, rate: 1.2, gender: 'female', prompt: "Greetings Earthling." },
         ];
         let currentVoice = 0;
 
-        // DOM Elements
-        const chatLog = document.getElementById('chat-log');
+        // --- DOM ---
         const video = document.getElementById('video-preview');
         const canvas = document.getElementById('face-canvas');
         const coreWrapper = document.getElementById('core-wrapper');
-        const signDisplay = document.getElementById('sign-display');
-        const hintText = document.getElementById('detected-hint');
+        const guideGrid = document.getElementById('guide-grid');
+        const signArea = document.getElementById('sign-words-area');
+        const chatLog = document.getElementById('chat-log');
+        const subtitleToast = document.getElementById('subtitle-toast');
         const textInput = document.getElementById('text-input');
         const voiceBar = document.getElementById('voice-bar');
         const startBtn = document.getElementById('start-btn');
         const loadingStatus = document.getElementById('loading-status');
 
-        // --- 1. UI LOGIC ---
+        // --- UI FUNCTIONS ---
         function setupVoiceUI() {
             voiceBar.innerHTML = '';
             voices.forEach((v, index) => {
@@ -228,99 +310,150 @@
             });
         }
 
-        function updateSignUI() {
-            Array.from(signDisplay.getElementsByClassName('sign-word')).forEach(e => e.remove());
-            signBuffer.forEach(word => {
-                const span = document.createElement('span');
-                span.className = 'sign-word';
-                span.innerText = word;
-                signDisplay.insertBefore(span, hintText);
+        function setupGuideUI() {
+            guideGrid.innerHTML = '';
+            signLibrary.forEach(sign => {
+                const card = document.createElement('div');
+                card.className = 'sign-card';
+                card.id = `card-${sign.id}`;
+                card.innerHTML = `
+                    <div class="sign-emoji">${sign.emoji}</div>
+                    <div class="sign-title">${sign.title}</div>
+                    <div class="sign-desc">${sign.desc}</div>
+                `;
+                guideGrid.appendChild(card);
             });
+        }
+
+        function toggleGuide() {
+            isGuideOpen = !isGuideOpen;
+            if(isGuideOpen) {
+                document.body.classList.add('guide-active');
+            } else {
+                document.body.classList.remove('guide-active');
+                subtitleToast.classList.remove('visible'); // Hide toast when leaving guide
+            }
+        }
+
+        function updateSignUI() {
+            signArea.innerHTML = '';
+            if (signBuffer.length === 0) signArea.innerHTML = '<span style="color:rgba(255,255,255,0.3); font-style:italic;">Signs appear here...</span>';
+            else {
+                signBuffer.forEach(word => {
+                    const span = document.createElement('span'); span.className = 'sign-pill'; span.innerText = word;
+                    signArea.appendChild(span);
+                });
+            }
             if(signBuffer.length > 0) textInput.value = signBuffer.join(" ");
         }
 
-        function clearSignBuffer() {
-            signBuffer = [];
-            textInput.value = "";
-            updateSignUI();
+        function clearSignBuffer() { signBuffer = []; textInput.value = ""; updateSignUI(); }
+
+        function showToast(text) {
+            subtitleToast.innerText = text;
+            subtitleToast.classList.add('visible');
+            // Auto hide after 6 seconds
+            setTimeout(() => { if(subtitleToast.innerText === text) subtitleToast.classList.remove('visible'); }, 6000);
         }
 
-        // --- 2. VISION (FACE + HANDS) ---
+        // --- VISION ---
         async function initVision() {
             try {
                 await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
                 await faceapi.nets.faceExpressionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
                 
                 const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-                hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5});
+                hands.setOptions({maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5});
                 hands.onResults(onHandResults);
 
+                let lastProcess = 0;
                 const camera = new Camera(video, {
                     onFrame: async () => {
+                        const now = Date.now();
+                        if (now - lastProcess < 100) return; // 10 FPS
+                        lastProcess = now;
                         if(video.paused || video.ended) return;
                         await hands.send({image: video}); 
                         detectFace(); 
                     }, width: 320, height: 240
                 });
 
-                loadingStatus.innerText = "All Systems Go.";
+                loadingStatus.innerText = "Ready.";
                 startBtn.style.display = "inline-block";
-                
                 startBtn.onclick = () => {
                     document.getElementById('overlay').style.display = 'none';
                     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                    setupVoiceUI();
-                    camera.start();
-                    if(memory.length === 0) speakHuman("Hello! I am Vibe Mate. Pick a voice and let's chat!", "happy");
-                    else {
-                         memory.forEach(m => {
-                             if(m.role === 'user') addMsg(m.content, 'user');
-                             if(m.role === 'assistant') addMsg(m.content, 'ai');
-                         });
-                    }
+                    setupVoiceUI(); setupGuideUI(); camera.start();
+                    speakHuman("Hello! I am ready to see and hear you.", "happy");
                 };
-            } catch(e) { console.error(e); loadingStatus.innerText = "Error loading AI models."; }
+            } catch(e) { console.error(e); }
         }
 
         const ctx = canvas.getContext('2d');
         function onHandResults(results) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.querySelectorAll('.sign-card').forEach(c => c.classList.remove('active-match'));
+
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const lm = results.multiHandLandmarks[0];
                 ctx.save(); ctx.scale(-1, 1); ctx.translate(-canvas.width, 0);
-                drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#8b5cf6', lineWidth: 2});
+                drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: 'rgba(139, 92, 246, 0.4)', lineWidth: 2});
                 drawLandmarks(ctx, lm, {color: '#fbbf24', lineWidth: 1, radius: 2});
                 ctx.restore();
 
                 const sign = detectSign(lm);
-                if (sign) handleDetectedSign(sign);
-                else { hintText.innerText = "..."; signHoldTimer=0; }
-            }
+                handleDetectedSign(sign);
+            } else { lastStableSign = null; signHoldTimer = 0; }
         }
 
         function detectSign(lm) {
-            const isExtended = (tip, pip) => lm[tip].y < lm[pip].y;
-            const thumbOpen = Math.abs(lm[4].x - lm[17].x) > 0.15;
+            const isExtended = (tip, pip) => lm[tip].y < lm[pip].y; 
+            const thumbOpen = Math.abs(lm[4].x - lm[17].x) > 0.15; // Width check
             const [i, m, r, p] = [isExtended(8,6), isExtended(12,10), isExtended(16,14), isExtended(20,18)];
+
+            // Logic Tree
+            if(thumbOpen && i && m && r && p) return "HELLO"; // Open Hand (Can also be Stop, but we default Hello)
+            if(!thumbOpen && i && !m && !r && !p) return "YOU"; // Index Only
+            if(!thumbOpen && i && m && !r && !p) return "PEACE"; // V Sign
+            if(thumbOpen && i && !m && !r && p) return "LOVE"; // ILY
+            if(thumbOpen && !i && !m && !r && !p) return "YES"; // Thumbs Up
+            if(!thumbOpen && !i && !m && !r && !p) return "NO"; // Fist
+            if(thumbOpen && !i && !m && !r && p) return "CALL ME"; // Shaka
+            if(!thumbOpen && i && !m && !r && p) return "ROCK"; // Horns
             
-            if(thumbOpen && i && m && r && p) return "HELLO";
-            if(!thumbOpen && i && !m && !r && !p) return "YOU";
-            if(!thumbOpen && i && m && !r && !p) return "PEACE";
-            if(thumbOpen && i && !m && !r && p) return "LOVE";
-            if(thumbOpen && !i && !m && !r && !p) return "YES";
-            if(!thumbOpen && !i && !m && !r && !p) return "NO";
-            if(thumbOpen && !i && !m && !r && p) return "CALL ME";
+            // OK Sign: Thumb and Index tips close, others open
+            const distThumbIndex = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
+            if(distThumbIndex < 0.05 && m && r && p) return "OK";
+
+            // Directional Pointing (Using x coordinates)
+            if(i && !m && !r && !p) {
+                if(lm[8].x > lm[6].x + 0.1) return "LEFT"; // Mirrored
+                if(lm[8].x < lm[6].x - 0.1) return "RIGHT"; // Mirrored
+            }
+
             return null;
         }
 
         function handleDetectedSign(sign) {
-            hintText.innerText = sign;
+            if(!sign) { lastStableSign = null; return; }
+
+            // Highlight in Guide
+            if(isGuideOpen) {
+                const card = document.getElementById(`card-${sign}`);
+                if(card) card.classList.add('active-match');
+            }
+
             if (sign === lastStableSign) {
                 signHoldTimer++;
-                if (signHoldTimer === 20) { 
-                    if(signBuffer[signBuffer.length-1] !== sign) {
-                        signBuffer.push(sign);
-                        updateSignUI();
+                // Wait longer (CONFIRM_THRESHOLD)
+                if (signHoldTimer >= CONFIRM_THRESHOLD) {
+                    if(signBuffer.length === 0 || signBuffer[signBuffer.length-1] !== sign) {
+                        if (!isGuideOpen) { signBuffer.push(sign); updateSignUI(); }
+                        signHoldTimer = -20; // Longer cooldown
+                        
+                        // Visual Feedback of recognition
+                        const card = document.getElementById(`card-${sign}`);
+                        if(card) { card.style.borderColor = 'white'; setTimeout(()=>card.style.borderColor='transparent', 500); }
                     }
                 }
             } else { lastStableSign = sign; signHoldTimer = 0; }
@@ -341,102 +474,61 @@
             }
         }
 
-        // --- 3. BRAIN & SPEECH ---
         async function sendInput() {
-            const text = textInput.value;
-            if(!text) return;
+            const text = textInput.value; if(!text) return;
             
-            addMsg(text, 'user');
+            addMsg(text, 'user'); 
             memory.push({ role: 'user', content: text });
-            saveMemory();
             clearSignBuffer();
+            
+            // If guide open, show a toast saying "Sending..."
+            if(isGuideOpen) showToast("Thinking...");
 
-            const thinkingId = addMsg("Thinking...", 'ai', true);
-
-            const systemPrompt = {
-                role: "system", 
-                content: `${voices[currentVoice].prompt} 
-                Current User Emotion: ${currentEmotion}. 
-                Context: User may use Sign Language keywords. 
-                Output JSON: { "reply": "text", "emotion": "happy/neutral/sad" }`
-            };
-
+            const thinkingId = addMsg("...", 'ai', true);
+            
             try {
                 const response = await fetch("/.netlify/functions/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        model: MODEL_NAME,
-                        messages: [systemPrompt, ...memory.slice(-10)],
-                        response_format: { type: "json_object" }
+                        model: MODEL_NAME, messages: [
+                            { role: "system", content: `${voices[currentVoice].prompt} Output JSON: {"reply": "str", "emotion": "str"}`},
+                            ...memory.slice(-5)
+                        ], response_format: { type: "json_object" }
                     })
                 });
-                
                 const data = await response.json();
                 const aiData = JSON.parse(data.choices[0].message.content);
-
-                removeMsg(thinkingId);
+                
+                removeMsg(thinkingId); 
                 addMsg(aiData.reply, 'ai');
                 memory.push({ role: 'assistant', content: aiData.reply });
-                saveMemory();
+                
+                // Show floating subtitle if in Guide Mode
+                if(isGuideOpen) showToast(aiData.reply);
                 
                 speakHuman(aiData.reply, aiData.emotion);
-
-            } catch(e) { removeMsg(thinkingId); console.error(e); }
+            } catch(e) { removeMsg(thinkingId); }
         }
 
         function speakHuman(text, emotion) {
             window.speechSynthesis.cancel();
             const ut = new SpeechSynthesisUtterance(text);
             const v = voices[currentVoice];
-            
-            ut.pitch = v.pitch + (emotion==='happy'?0.1:0);
-            ut.rate = v.rate;
-            
-            // Advanced Voice Selection
-            const allVoices = window.speechSynthesis.getVoices();
-            let selectedVoice = null;
-
-            // 1. Try to match specific preferred names first
-            if(v.id === 'robot') selectedVoice = allVoices.find(x => x.name.includes("Google UK English Male") || x.name.includes("Zira"));
-            
-            // 2. If no specific match, try to match gender
-            if(!selectedVoice) {
-                if (v.genderPreference === 'male') {
-                    selectedVoice = allVoices.find(x => x.name.includes('Male') || x.name.includes('David'));
-                } else {
-                    selectedVoice = allVoices.find(x => x.name.includes('Female') || x.name.includes('Zira') || x.name.includes('Google US English'));
-                }
-            }
-            
-            if(selectedVoice) ut.voice = selectedVoice;
-
+            ut.pitch = v.pitch + (emotion==='happy'?0.1:0); ut.rate = v.rate;
+            const preferred = window.speechSynthesis.getVoices().find(x => x.name.toLowerCase().includes(v.gender));
+            if(preferred) ut.voice = preferred;
             ut.onstart = () => coreWrapper.classList.add('speaking');
             ut.onend = () => coreWrapper.classList.remove('speaking');
             window.speechSynthesis.speak(ut);
         }
 
-        // --- UTILS ---
-        function saveMemory() { localStorage.setItem('vibemate_memory', JSON.stringify(memory)); }
-        function clearMemory() { localStorage.removeItem('vibemate_memory'); memory = []; chatLog.innerHTML = ''; }
         function addMsg(text, type, isTemp=false) {
             const div = document.createElement('div'); div.className = `msg ${type}`; div.innerText = text;
             if(isTemp) div.id='temp-msg'; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight; return div.id;
         }
         function removeMsg(id) { const el = document.getElementById(id); if(el) el.remove(); }
-
-        textInput.addEventListener('keypress', (e) => { if(e.key==='Enter') sendInput(); });
         
-        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if(Speech) {
-            const rec = new Speech(); rec.lang = USER_LANGUAGE; 
-            const btn = document.getElementById('mic-btn');
-            rec.onstart = () => btn.style.background = '#ef4444'; 
-            rec.onend = () => btn.style.background = 'var(--primary)';
-            rec.onresult = (e) => { textInput.value = e.results[0][0].transcript; sendInput(); };
-            btn.onclick = () => rec.start();
-        }
-
+        textInput.addEventListener('keypress', (e) => { if(e.key==='Enter') sendInput(); });
         initVision();
     </script>
 </body>
